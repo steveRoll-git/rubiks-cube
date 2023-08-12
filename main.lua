@@ -38,6 +38,8 @@ local stickerImage = lg.newImage("images/sticker.png")
 local floorImage = lg.newImage("images/floor.png")
 floorImage:setWrap("repeat")
 
+local fogShader = lg.newShader("shaders/fog.glsl")
+
 local function cubeMesh(x, y, z)
   local n = -0.5
   local p = 0.5
@@ -101,6 +103,9 @@ local floor = lg.newMesh(vertexFormat, {
   { -gridSize, 0, gridSize,  -gridSize + 0.5, -gridSize + 0.5, 1, 1, 1 },
 }, "fan")
 floor:setTexture(floorImage)
+
+fogShader:send("fogStartRadius", 5)
+fogShader:send("fogEndRadius", gridSize)
 
 local projectionMat = R3.new_origin(true, lg.getWidth(), lg.getHeight(), 0.1, math.rad(90))
 
@@ -171,7 +176,9 @@ function love.draw()
   lg.replaceTransform(projectionMat) -- projection matrix
   lg.applyTransform(camera.matrix)   -- view matrix
 
+  lg.setShader(fogShader)
   lg.draw(floor)
+  lg.setShader()
 
   -- lg.push()
   -- lg.applyTransform(R3.translate(0, 0, 0))
