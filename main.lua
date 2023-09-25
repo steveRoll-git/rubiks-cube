@@ -21,6 +21,15 @@ local function dot2D(x1, y1, x2, y2)
   return (x1 * x2) + (y1 * y2)
 end
 
+local function ccw2D(x1, y1, x2, y2, x3, y3)
+  return (y2 - y1) * (x3 - x2) - (y3 - y2) * (x2 - x1) < 0
+end
+
+local function normalize2D(x, y)
+  local len = math.sqrt(x ^ 2 + y ^ 2)
+  return x / len, y / len
+end
+
 local function translate3D(v)
   lg.applyTransform(R3.translate(v.x, v.y, v.z))
 end
@@ -167,7 +176,9 @@ local isRotating = false
 local rotatingAxis
 local rotatingAxisLetter
 local rotatingSlice
-local rotatingAngle = 0.5
+local rotatingAngle
+local rotatingDir2D
+local rotatingCCW
 
 -- after we press the mouse on a piece and just before rotation starts,
 -- we choose one of the two axes in this table
@@ -249,13 +260,19 @@ function love.mousemoved(x, y, dx, dy)
   if isOrbiting then
     camera.rotH = (camera.rotH - dx * orbitSensitivity) % (math.pi * 2)
     camera.rotV = clamp(camera.rotV - dy * orbitSensitivity, -math.pi / 2, math.pi / 2)
+  elseif isRotating then
+    local d = dot2D(dx, dy, rotatingDir2D.x, rotatingDir2D.y)
+    rotatingAngle = rotatingAngle + (d / 64 * (rotatingCCW and -1 or 1))
   elseif isGrabbing and not isRotating and dist(x, y, rotationPressPos.x, rotationPressPos.y) >= rotationStartRadius then
     -- this table will contain both rotation options, with the first one being the one closest to the mouse's moving direction.
     -- the second one will end up being the rotation axis.
     local options = {}
     for axis, screenPos in pairs(rotationOptions) do
+      local dirX, dirY = normalize2D(screenPos.x - rotationPressPos.x, screenPos.y - rotationPressPos.y)
       table.insert(options, {
         axis = axis,
+        screenPos = screenPos,
+        dir2D = { x = dirX, y = dirY },
         product = math.abs(dot2D(x - rotationPressPos.x, y - rotationPressPos.y, screenPos.x - rotationPressPos.x,
           screenPos.y - rotationPressPos.y))
       })
@@ -269,6 +286,10 @@ function love.mousemoved(x, y, dx, dy)
     rotatingSlice.y = rotatingSlice.y * rotatingAxis.y
     rotatingSlice.z = rotatingSlice.z * rotatingAxis.z
     rotatingAxisLetter = options[2].axis
+    rotatingDir2D = options[1].dir2D
+    rotatingAngle = 0
+    rotatingCCW = ccw2D(x, y, options[1].screenPos.x, options[1].screenPos.y, options[2].screenPos.x,
+      options[2].screenPos.y)
     isRotating = true
   else
     updateCameraMatrix()
@@ -293,7 +314,6 @@ function love.mousepressed(x, y, b)
         z = (az > ax and az > ay) and rounded.z or 0,
       }
       poo = normal
-      poo2 = rounded
       rotatingSlice = rounded
 
       -- for the two axes in `normal` that are zero, we will generate 2D projected points that match those axes' units.
@@ -364,11 +384,16 @@ function love.draw()
 
   if poo then
     lg.setColor(0, 0, 0)
-    lg.print(("x %.2f  y %.2f  z %.2f\nx %.2f  y %.2f  z %.2f"):format(poo.x, poo.y, poo.z, poo2.x, poo2.y, poo2.z))
+    lg.print(("x %.2f  y %.2f  z %.2f\nx %.2f  y %.2f  z %.2f")
+      :format(poo.x, poo.y, poo.z, rotatingSlice.x, rotatingSlice.y, rotatingSlice.z))
 
     for axis, point in pairs(rotationOptions) do
       lg.setColor(debugColors[axis])
       lg.circle("fill", point.x, point.y, 5)
     end
+  end
+  if isRotating then
+    lg.setColor(0, 0, 0)
+    lg.print(("%s"):format(rotatingCCW), 0, 100)
   end
 end
