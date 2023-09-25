@@ -74,12 +74,6 @@ local colors = {
   ["0 -1 0"] = { 1, 1, 0 },    -- Down    yellow
   ["0 0 -1"] = { 0, 1, 0 },    -- Back    green
 }
-colors.front = colors["0 0 1"]
-colors.back = colors["0 0 -1"]
-colors.left = colors["-1 0 0"]
-colors.right = colors["1 0 0"]
-colors.up = colors["0 1 0"]
-colors.down = colors["0 -1 0"]
 
 -- key is a 3d direction, value is the first index in the piece mesh for that face
 local axisIndices = {
@@ -128,35 +122,35 @@ local function cubeMesh(x, y, z)
   local p = 0.5
   local mesh = lg.newMesh(vertexFormat, {
     -- back
-    { n, n, p, 0, 0, unpack(colors.back) },
-    { n, p, p, 0, 1, unpack(colors.back) },
-    { p, p, p, 1, 1, unpack(colors.back) },
-    { p, n, p, 1, 0, unpack(colors.back) },
+    { n, n, p, 0, 0, 0, 0, 0 },
+    { n, p, p, 0, 1, 0, 0, 0 },
+    { p, p, p, 1, 1, 0, 0, 0 },
+    { p, n, p, 1, 0, 0, 0, 0 },
     -- front
-    { n, n, n, 0, 0, unpack(colors.front) },
-    { p, n, n, 1, 0, unpack(colors.front) },
-    { p, p, n, 1, 1, unpack(colors.front) },
-    { n, p, n, 0, 1, unpack(colors.front) },
+    { n, n, n, 0, 0, 0, 0, 0 },
+    { p, n, n, 1, 0, 0, 0, 0 },
+    { p, p, n, 1, 1, 0, 0, 0 },
+    { n, p, n, 0, 1, 0, 0, 0 },
     -- right
-    { p, n, n, 0, 0, unpack(colors.right) },
-    { p, n, p, 1, 0, unpack(colors.right) },
-    { p, p, p, 1, 1, unpack(colors.right) },
-    { p, p, n, 0, 1, unpack(colors.right) },
+    { p, n, n, 0, 0, 0, 0, 0 },
+    { p, n, p, 1, 0, 0, 0, 0 },
+    { p, p, p, 1, 1, 0, 0, 0 },
+    { p, p, n, 0, 1, 0, 0, 0 },
     -- left
-    { n, n, n, 0, 0, unpack(colors.left) },
-    { n, p, n, 0, 1, unpack(colors.left) },
-    { n, p, p, 1, 1, unpack(colors.left) },
-    { n, n, p, 1, 0, unpack(colors.left) },
+    { n, n, n, 0, 0, 0, 0, 0 },
+    { n, p, n, 0, 1, 0, 0, 0 },
+    { n, p, p, 1, 1, 0, 0, 0 },
+    { n, n, p, 1, 0, 0, 0, 0 },
     -- up
-    { n, p, n, 0, 0, unpack(colors.up) },
-    { p, p, n, 0, 1, unpack(colors.up) },
-    { p, p, p, 1, 1, unpack(colors.up) },
-    { n, p, p, 1, 0, unpack(colors.up) },
+    { n, p, n, 0, 0, 0, 0, 0 },
+    { p, p, n, 0, 1, 0, 0, 0 },
+    { p, p, p, 1, 1, 0, 0, 0 },
+    { n, p, p, 1, 0, 0, 0, 0 },
     -- down
-    { n, n, p, 1, 0, unpack(colors.down) },
-    { p, n, p, 1, 1, unpack(colors.down) },
-    { p, n, n, 0, 1, unpack(colors.down) },
-    { n, n, n, 0, 0, unpack(colors.down) },
+    { n, n, p, 1, 0, 0, 0, 0 },
+    { p, n, p, 1, 1, 0, 0, 0 },
+    { p, n, n, 0, 1, 0, 0, 0 },
+    { n, n, n, 0, 0, 0, 0, 0 },
   }, "triangles")
   mesh:setTexture(stickerImage)
   mesh:setVertexMap({
