@@ -30,6 +30,13 @@ local function normalize2D(x, y)
   return x / len, y / len
 end
 
+local function format3(x, y, z)
+  if y == nil and z == nil and type(x) == "table" then
+    x, y, z = x.x, x.y, x.z
+  end
+  return ("%d %d %d"):format(x, y, z)
+end
+
 local function translate3D(v)
   lg.applyTransform(R3.translate(v.x, v.y, v.z))
 end
@@ -74,6 +81,42 @@ colors.right = colors["1 0 0"]
 colors.up = colors["0 1 0"]
 colors.down = colors["0 -1 0"]
 
+-- key is a 3d direction, value is the first index in the piece mesh for that face
+local axisIndices = {
+  ["0 0 1"] = 1,
+  ["0 0 -1"] = 5,
+  ["1 0 0"] = 9,
+  ["-1 0 0"] = 13,
+  ["0 1 0"] = 17,
+  ["0 -1 0"] = 21,
+}
+
+local cubeState = {}
+local function initState()
+  for x = -1, 1 do
+    for y = -1, 1 do
+      for z = -1, 1 do
+        if x ~= 0 or y ~= 0 or z ~= 0 then
+          local piece = {}
+          cubeState[format3(x, y, z)] = piece
+          if x ~= 0 then
+            local face = format3(x, 0, 0)
+            piece[face] = colors[face]
+          end
+          if y ~= 0 then
+            local face = format3(0, y, 0)
+            piece[face] = colors[face]
+          end
+          if z ~= 0 then
+            local face = format3(0, 0, z)
+            piece[face] = colors[face]
+          end
+        end
+      end
+    end
+  end
+end
+
 local stickerImage = lg.newImage("images/sticker.png")
 local floorImage = lg.newImage("images/floor.png")
 floorImage:setWrap("repeat")
@@ -84,16 +127,16 @@ local function cubeMesh(x, y, z)
   local n = -0.5
   local p = 0.5
   local mesh = lg.newMesh(vertexFormat, {
-    -- front
-    { n, n, n, 0, 0, unpack(colors.front) },
-    { p, n, n, 1, 0, unpack(colors.front) },
-    { p, p, n, 1, 1, unpack(colors.front) },
-    { n, p, n, 0, 1, unpack(colors.front) },
     -- back
     { n, n, p, 0, 0, unpack(colors.back) },
     { n, p, p, 0, 1, unpack(colors.back) },
     { p, p, p, 1, 1, unpack(colors.back) },
     { p, n, p, 1, 0, unpack(colors.back) },
+    -- front
+    { n, n, n, 0, 0, unpack(colors.front) },
+    { p, n, n, 1, 0, unpack(colors.front) },
+    { p, p, n, 1, 1, unpack(colors.front) },
+    { n, p, n, 0, 1, unpack(colors.front) },
     -- right
     { p, n, n, 0, 0, unpack(colors.right) },
     { p, n, p, 1, 0, unpack(colors.right) },
@@ -214,6 +257,22 @@ local function generateRubik()
   end
 end
 
+-- updates the colors of all the pieces' faces based on the state
+local function updatePieceColors()
+  for _, p in ipairs(pieces) do
+    local part = cubeState[format3(p)]
+    for axis, index in pairs(axisIndices) do
+      local r, g, b = 0, 0, 0
+      if part[axis] then
+        r, g, b = unpack(part[axis])
+      end
+      for i = 0, 3 do
+        p.mesh:setVertexAttribute(index + i, 3, r, g, b)
+      end
+    end
+  end
+end
+
 local rubikPosition = {
   x = 0,
   y = 3,
@@ -252,7 +311,9 @@ local function castRay(x, y)
   return intersect
 end
 
+initState()
 generateRubik()
+updatePieceColors()
 
 lg.setBackgroundColor(0.8, 0.8, 0.8)
 
