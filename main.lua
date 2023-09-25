@@ -4,6 +4,7 @@ local lm = love.math
 
 local R3 = require "R3"
 local vecMath = require "vecMath"
+local deepCopy = require "deepCopy"
 
 local function clamp(v, a, b)
   return math.min(math.max(v, a), b)
@@ -30,11 +31,20 @@ local function normalize2D(x, y)
   return x / len, y / len
 end
 
+local function round3(t)
+  return { round(t[1]), round(t[2]), round(t[3]) }
+end
+
 local function format3(x, y, z)
   if y == nil and z == nil and type(x) == "table" then
     x, y, z = x.x, x.y, x.z
   end
   return ("%d %d %d"):format(x, y, z)
+end
+
+local function fromStr3(s)
+  local x, y, z = s:match(("(%-?%d+)"):rep(3, " "))
+  return tonumber(x), tonumber(y), tonumber(z)
 end
 
 local function translate3D(v)
@@ -314,6 +324,31 @@ local function castRay(x, y)
   return intersect
 end
 
+local function doRotation(direction)
+  local matrix = R3.rotate(R3.aa_to_quat(rotatingAxis.x, rotatingAxis.y, rotatingAxis.z, math.pi / 2 * direction))
+
+  local newState = deepCopy(cubeState)
+
+  for p, faces in pairs(cubeState) do
+    local px, py, pz = fromStr3(p)
+    local pos = { x = px, y = py, z = pz }
+    if pos[rotatingAxisLetter] == rotatingSlice[rotatingAxisLetter] then
+      local rotatedPosition = vecMath.mulMatrixVec4(matrix, { pos.x, pos.y, pos.z, 1 })
+      rotatedPosition = round3(rotatedPosition)
+      local rp = format3(unpack(rotatedPosition))
+      newState[rp] = {}
+      for face, color in pairs(faces) do
+        local fx, fy, fz = fromStr3(face)
+        local rotatedFace = vecMath.mulMatrixVec4(matrix, { fx, fy, fz, 0 })
+        rotatedFace = round3(rotatedFace)
+        newState[rp][format3(unpack(rotatedFace))] = faces[face]
+      end
+    end
+  end
+
+  cubeState = newState
+end
+
 initState()
 generateRubik()
 updatePieceColors()
@@ -403,6 +438,11 @@ end
 
 function love.mousereleased(x, y, b)
   if b == 1 and isGrabbing then
+    if isRotating then
+      -- perform the rotation
+      doRotation(rotatingAngle > 0 and 1 or -1)
+      updatePieceColors()
+    end
     isGrabbing = false
     isRotating = false
   elseif b == 2 and isOrbiting then
