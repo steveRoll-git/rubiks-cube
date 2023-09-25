@@ -67,12 +67,12 @@ local vertexFormat = {
 }
 
 local colors = {
-  ["0 0 1"] = { 0, 1, 0 },     -- 1 Front   green
-  ["-1 0 0"] = { 1, 0.41, 0 }, -- 2 Left    orange
-  ["1 0 0"] = { 1, 0, 0 },     -- 3 Right   red
-  ["0 1 0"] = { 1, 1, 1 },     -- 4 Up      white
-  ["0 -1 0"] = { 1, 1, 0 },    -- 5 Down    yellow
-  ["0 0 -1"] = { 0, 0, 1 },    -- 6 Back    yellow
+  ["0 0 1"] = { 0, 0, 1 },     -- Front   blue
+  ["-1 0 0"] = { 1, 0.41, 0 }, -- Left    orange
+  ["1 0 0"] = { 1, 0, 0 },     -- Right   red
+  ["0 1 0"] = { 1, 1, 1 },     -- Up      white
+  ["0 -1 0"] = { 1, 1, 0 },    -- Down    yellow
+  ["0 0 -1"] = { 0, 1, 0 },    -- Back    green
 }
 colors.front = colors["0 0 1"]
 colors.back = colors["0 0 -1"]
