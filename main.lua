@@ -67,12 +67,21 @@ local vertexFormat = {
 }
 
 local colors = {
-  ["0 0 1"] = { 0, 0, 1 },     -- Front   blue
-  ["-1 0 0"] = { 1, 0.41, 0 }, -- Left    orange
-  ["1 0 0"] = { 1, 0, 0 },     -- Right   red
-  ["0 1 0"] = { 1, 1, 1 },     -- Up      white
-  ["0 -1 0"] = { 1, 1, 0 },    -- Down    yellow
-  ["0 0 -1"] = { 0, 1, 0 },    -- Back    green
+  { 0, 0,    1 },
+  { 1, 0.41, 0 },
+  { 1, 0,    0 },
+  { 1, 1,    1 },
+  { 1, 1,    0 },
+  { 0, 1,    0 },
+}
+
+local axisColors = {
+  ["0 0 1"] = 1,  -- Front   blue
+  ["-1 0 0"] = 2, -- Left    orange
+  ["1 0 0"] = 3,  -- Right   red
+  ["0 1 0"] = 4,  -- Up      white
+  ["0 -1 0"] = 5, -- Down    yellow
+  ["0 0 -1"] = 6, -- Back    green
 }
 
 -- key is a 3d direction, value is the first index in the piece mesh for that face
@@ -95,15 +104,15 @@ local function initState()
           cubeState[format3(x, y, z)] = piece
           if x ~= 0 then
             local face = format3(x, 0, 0)
-            piece[face] = colors[face]
+            piece[face] = axisColors[face]
           end
           if y ~= 0 then
             local face = format3(0, y, 0)
-            piece[face] = colors[face]
+            piece[face] = axisColors[face]
           end
           if z ~= 0 then
             local face = format3(0, 0, z)
-            piece[face] = colors[face]
+            piece[face] = axisColors[face]
           end
         end
       end
@@ -258,7 +267,7 @@ local function updatePieceColors()
     for axis, index in pairs(axisIndices) do
       local r, g, b = 0, 0, 0
       if part[axis] then
-        r, g, b = unpack(part[axis])
+        r, g, b = unpack(colors[part[axis]])
       end
       for i = 0, 3 do
         p.mesh:setVertexAttribute(index + i, 3, r, g, b)
