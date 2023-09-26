@@ -1,10 +1,11 @@
-local love = love
-local lg = love.graphics
-local lm = love.math
+local love     = love
+local lg       = love.graphics
+local lm       = love.math
 
-local R3 = require "R3"
-local vecMath = require "vecMath"
+local R3       = require "R3"
+local vecMath  = require "vecMath"
 local deepCopy = require "deepCopy"
+local flux     = require "flux"
 
 local function lerp(a, b, t)
   return a + (b - a) * t
@@ -217,6 +218,8 @@ function game:init()
     z = 0
   }
 
+  self.tweens = flux.group()
+
   self:initState()
   self:generateRubik()
   self:updatePieceColors()
@@ -351,6 +354,7 @@ function game:mousemoved(x, y, dx, dy)
   elseif self.isRotating then
     local d = dot2D(dx, dy, self.rotatingDir2D.x, self.rotatingDir2D.y)
     self.rotatingAngle = self.rotatingAngle + (d / 64 * (self.rotatingCCW and -1 or 1))
+    self.rotatingSpeed = math.sqrt(dx ^ 2 + dy ^ 2)
   elseif self.isGrabbing and not self.isRotating and dist(x, y, self.rotationPressPos.x, self.rotationPressPos.y) >= self.rotationStartRadius then
     -- this table will contain both rotation options, with the first one being the one closest to the mouse's moving direction.
     -- the second one will end up being the rotation axis.
@@ -429,12 +433,20 @@ end
 function game:mousereleased(x, y, b)
   if b == 1 and self.isGrabbing then
     if self.isRotating then
-      -- perform the rotation
-      self:doRotation(self.rotatingAngle > 0 and 1 or -1)
-      self:updatePieceColors()
+      if math.abs(self.rotatingAngle) > math.pi / 4 or self.rotatingSpeed > 2 then
+        -- perform the rotation
+        local direction = self.rotatingAngle > 0 and 1 or -1
+        self:doRotation(direction)
+        self:updatePieceColors()
+        self.visRotatingAngle = self.rotatingAngle - direction * math.pi / 2
+      end
     end
     self.isGrabbing = false
     self.isRotating = false
+    self.tweeningRotation = true
+    self.tweens:to(self, 0.1, { visRotatingAngle = 0 }):oncomplete(function()
+      self.tweeningRotation = false
+    end)
   elseif b == 2 and self.isOrbiting then
     self.isOrbiting = false
   end
@@ -444,6 +456,8 @@ function game:update(dt)
   if self.isRotating then
     self.visRotatingAngle = damp(self.visRotatingAngle, self.rotatingAngle, 18, dt)
   end
+
+  self.tweens:update(dt)
 end
 
 function game:draw()
@@ -472,7 +486,7 @@ function game:draw()
   translate3D(self.rubikPosition)
   for _, p in ipairs(self.pieces) do
     lg.push()
-    if self.isRotating and p[self.rotatingAxisLetter] == self.rotatingSlice[self.rotatingAxisLetter] then
+    if (self.isRotating or self.tweeningRotation) and p[self.rotatingAxisLetter] == self.rotatingSlice[self.rotatingAxisLetter] then
       translate3D(self.rotatingSlice)
       lg.applyTransform(R3.rotate(R3.aa_to_quat(self.rotatingAxis.x, self.rotatingAxis.y, self.rotatingAxis.z,
         self.visRotatingAngle)))
