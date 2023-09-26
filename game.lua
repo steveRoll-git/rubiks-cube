@@ -435,7 +435,7 @@ function game:mousereleased(x, y, b)
     if self.isRotating then
       if math.abs(self.rotatingAngle) > math.pi / 4 or self.rotatingSpeed > 2 then
         -- perform the rotation
-        local direction = self.rotatingAngle > 0 and 1 or -1
+        local direction = round(self.rotatingAngle / (math.pi / 2))
         self:doRotation(direction)
         self:updatePieceColors()
         self.visRotatingAngle = self.rotatingAngle - direction * math.pi / 2
