@@ -23,6 +23,10 @@ local function round(x)
   return math.floor(x + 0.5)
 end
 
+local function sign(x)
+  return x > 0 and 1 or -1
+end
+
 local function dist(x1, y1, x2, y2)
   return math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
 end
@@ -203,6 +207,7 @@ function game:init()
 
   self.isGrabbing = false
   self.isRotating = false
+  self.minFlickSpeed = 4
 
   -- after we press the mouse on a piece and just before rotation starts,
   -- we choose one of the two axes in this table
@@ -357,7 +362,7 @@ function game:mousemoved(x, y, dx, dy)
     self.camera.rotV = clamp(self.camera.rotV - dy * self.orbitSensitivity, -math.pi / 2, math.pi / 2)
   elseif self.isRotating then
     local d = dot2D(dx, dy, self.rotatingDir2D.x, self.rotatingDir2D.y)
-    self.rotatingAngle = self.rotatingAngle + (d / 64 * (self.rotatingCCW and -1 or 1))
+    self.rotatingAngle = self.rotatingAngle + (d / 84 * (self.rotatingCCW and -1 or 1))
     self.rotatingSpeed = math.sqrt(dx ^ 2 + dy ^ 2)
   elseif self.isGrabbing and not self.isRotating and dist(x, y, self.rotationPressPos.x, self.rotationPressPos.y) >= self.rotationStartRadius then
     -- this table will contain both rotation options, with the first one being the one closest to the mouse's moving direction.
@@ -437,9 +442,10 @@ end
 function game:mousereleased(x, y, b)
   if b == 1 and self.isGrabbing then
     if self.isRotating then
-      if math.abs(self.rotatingAngle) > math.pi / 4 or self.rotatingSpeed > 2 then
+      if math.abs(self.rotatingAngle) > math.pi / 4 or self.rotatingSpeed >= self.minFlickSpeed then
         -- perform the rotation
-        local direction = round(self.rotatingAngle / (math.pi / 2))
+        local direction = round((self.rotatingAngle + sign(self.rotatingAngle) * math.min(math.floor(self.rotatingSpeed / self.minFlickSpeed), 1)) /
+        (math.pi / 2))
         self:doRotation(direction)
         self:updatePieceColors()
         self.visRotatingAngle = self.rotatingAngle - direction * math.pi / 2
@@ -448,7 +454,7 @@ function game:mousereleased(x, y, b)
     self.isGrabbing = false
     self.isRotating = false
     self.tweeningRotation = true
-    self.tweens:to(self, 0.1, { visRotatingAngle = 0 }):oncomplete(function()
+    self.tweens:to(self, math.max(math.abs(self.visRotatingAngle) / 4, 0.05), { visRotatingAngle = 0 }):oncomplete(function()
       self.tweeningRotation = false
     end)
   elseif b == 2 and self.isOrbiting then
