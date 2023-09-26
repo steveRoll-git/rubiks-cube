@@ -403,7 +403,6 @@ function game:mousepressed(x, y, b)
         y = (ay > ax and ay > az) and rounded.y or 0,
         z = (az > ax and az > ay) and rounded.z or 0,
       }
-      poo = normal
       self.rotatingSlice = rounded
 
       -- for the two axes in `normal` that are zero, we will generate 2D projected points that match those axes' units.
@@ -488,19 +487,11 @@ function game:draw()
 
   lg.pop()
 
-  if poo then
-    lg.setColor(0, 0, 0)
-    lg.print(("x %.2f  y %.2f  z %.2f\nx %.2f  y %.2f  z %.2f")
-      :format(poo.x, poo.y, poo.z, self.rotatingSlice.x, self.rotatingSlice.y, self.rotatingSlice.z))
-
+  if self.drawDebug then
     for axis, point in pairs(self.rotationOptions) do
       lg.setColor(debugColors[axis])
       lg.circle("fill", point.x, point.y, 5)
     end
-  end
-  if self.isRotating then
-    lg.setColor(0, 0, 0)
-    lg.print(("%s"):format(self.rotatingCCW), 0, 100)
   end
 end
 
