@@ -4,7 +4,7 @@ local state = setmetatable({}, { __index = game })
 state:init()
 
 function love.update(dt)
-  -- state:update(dt)
+  state:update(dt)
 end
 
 function love.mousemoved(x, y, dx, dy)

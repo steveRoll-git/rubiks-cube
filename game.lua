@@ -6,6 +6,14 @@ local R3 = require "R3"
 local vecMath = require "vecMath"
 local deepCopy = require "deepCopy"
 
+local function lerp(a, b, t)
+  return a + (b - a) * t
+end
+
+local function damp(a, b, rate, dt)
+  return lerp(a, b, 1 - math.exp(-rate * dt))
+end
+
 local function clamp(v, a, b)
   return math.min(math.max(v, a), b)
 end
@@ -369,6 +377,7 @@ function game:mousemoved(x, y, dx, dy)
     self.rotatingAxisLetter = options[2].axis
     self.rotatingDir2D = options[1].dir2D
     self.rotatingAngle = 0
+    self.visRotatingAngle = 0
     self.rotatingCCW = ccw2D(x, y, options[1].screenPos.x, options[1].screenPos.y, options[2].screenPos.x,
       options[2].screenPos.y)
     self.isRotating = true
@@ -432,6 +441,12 @@ function game:mousereleased(x, y, b)
   end
 end
 
+function game:update(dt)
+  if self.isRotating then
+    self.visRotatingAngle = damp(self.visRotatingAngle, self.rotatingAngle, 18, dt)
+  end
+end
+
 function game:draw()
   lg.setMeshCullMode("back")
   lg.setFrontFaceWinding("ccw")
@@ -461,7 +476,7 @@ function game:draw()
     if self.isRotating and p[self.rotatingAxisLetter] == self.rotatingSlice[self.rotatingAxisLetter] then
       translate3D(self.rotatingSlice)
       lg.applyTransform(R3.rotate(R3.aa_to_quat(self.rotatingAxis.x, self.rotatingAxis.y, self.rotatingAxis.z,
-        self.rotatingAngle)))
+        self.visRotatingAngle)))
       translate3D(vecMath.sub(p, self.rotatingSlice))
     else
       translate3D(p)
