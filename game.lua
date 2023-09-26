@@ -68,6 +68,10 @@ local function correctVec4(v)
   }
 end
 
+local function colorFromHex(h)
+  return { tonumber(h:sub(1, 2), 16) / 255, tonumber(h:sub(3, 4), 16) / 255, tonumber(h:sub(5, 6), 16) / 255 }
+end
+
 local debugColors = {
   x = { 1, 0, 0 },
   y = { 0, 1, 0 },
@@ -82,12 +86,12 @@ local vertexFormat = {
 }
 
 local colors = {
-  { 0, 0,    1 },
-  { 1, 0.41, 0 },
-  { 1, 0,    0 },
-  { 1, 1,    1 },
-  { 1, 1,    0 },
-  { 0, 1,    0 },
+  colorFromHex "0045AD",
+  colorFromHex "FF5900",
+  colorFromHex "C60000",
+  colorFromHex "FFFFFF",
+  colorFromHex "FFD500",
+  colorFromHex "009B50",
 }
 
 local axisColors = {
