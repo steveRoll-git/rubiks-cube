@@ -182,7 +182,13 @@ function game:init()
   self.fogShader:send("fogStartRadius", 5)
   self.fogShader:send("fogEndRadius", gridSize)
 
+  self.reflectionShader = lg.newShader("shaders/reflection.glsl")
+
+  self.reflectionResScale = 2
+
   self.projectionMatrix = R3.new_origin(true, lg.getWidth(), lg.getHeight(), 0.1, math.rad(90))
+  self.reflectionProjectionMatrix = R3.new_origin(true, lg.getWidth() / self.reflectionResScale,
+    lg.getHeight() / self.reflectionResScale, 0.1, math.rad(90))
 
   self.camera = {
     x = 4,
@@ -210,7 +216,7 @@ function game:init()
   -- start rotating after the mouse has moved this many pixels from `rotationPressPos`
   self.rotationStartRadius = 16
 
-  self.pieces = nil
+  self:remakeCanvases()
 
   self.rubikPosition = {
     x = 0,
@@ -223,6 +229,14 @@ function game:init()
   self:initState()
   self:generateRubik()
   self:updatePieceColors()
+end
+
+function game:remakeCanvases()
+  self.floorCanvas = lg.newCanvas()
+  self.reflectionCanvas = lg.newCanvas(lg.getWidth() / self.reflectionResScale, lg.getHeight() / self.reflectionResScale)
+  self.finalReflectionCanvas = lg.newCanvas()
+
+  self.reflectionShader:send("floorCanvas", self.floorCanvas)
 end
 
 function game:generateRubik()
@@ -460,30 +474,10 @@ function game:update(dt)
   self.tweens:update(dt)
 end
 
-function game:draw()
-  lg.setMeshCullMode("back")
-  lg.setFrontFaceWinding("ccw")
-  lg.setDepthMode("less", true)
-
-  lg.setColor(1, 1, 1)
-
-  self.camera.x = self.rubikPosition.x + math.sin(self.camera.rotH) * math.cos(self.camera.rotV) * self.orbitRadius
-  self.camera.y = self.rubikPosition.y - math.sin(self.camera.rotV) * self.orbitRadius
-  self.camera.z = self.rubikPosition.z - math.cos(self.camera.rotH) * math.cos(self.camera.rotV) * self.orbitRadius
-
-  self:updateCameraMatrix()
-
-  lg.push()
-
-  lg.replaceTransform(self.projectionMatrix) -- projection matrix
-  lg.applyTransform(self.camera.viewMatrix)  -- view matrix
-
-  lg.setShader(self.fogShader)
-  lg.draw(floor)
-  lg.setShader()
-
+function game:drawCube()
   lg.push()
   translate3D(self.rubikPosition)
+  lg.setDepthMode("less", true)
   for _, p in ipairs(self.pieces) do
     lg.push()
     if (self.isRotating or self.tweeningRotation) and p[self.rotatingAxisLetter] == self.rotatingSlice[self.rotatingAxisLetter] then
@@ -497,7 +491,68 @@ function game:draw()
     lg.draw(p.mesh)
     lg.pop()
   end
+  lg.setDepthMode()
   lg.pop()
+end
+
+function game:draw()
+  lg.setMeshCullMode("back")
+  lg.setFrontFaceWinding("ccw")
+
+  lg.setColor(1, 1, 1)
+
+  self.camera.x = self.rubikPosition.x + math.sin(self.camera.rotH) * math.cos(self.camera.rotV) * self.orbitRadius
+  self.camera.y = self.rubikPosition.y - math.sin(self.camera.rotV) * self.orbitRadius
+  self.camera.z = self.rubikPosition.z - math.cos(self.camera.rotH) * math.cos(self.camera.rotV) * self.orbitRadius
+
+  self:updateCameraMatrix()
+
+  lg.setCanvas(self.floorCanvas)
+  lg.push()
+  lg.replaceTransform(self.projectionMatrix) -- projection matrix
+  lg.applyTransform(self.camera.viewMatrix)  -- view matrix
+  lg.clear(0, 0, 0, 0)
+  lg.setShader(self.fogShader)
+  lg.draw(floor)
+  lg.pop()
+  lg.setShader()
+  lg.setCanvas()
+
+  lg.setCanvas({ self.reflectionCanvas, depth = true })
+  lg.clear(0, 0, 0, 0)
+  lg.push()
+  lg.replaceTransform(self.reflectionProjectionMatrix) -- projection matrix
+  lg.applyTransform(self.camera.viewMatrix)            -- view matrix
+  lg.scale(1, -1)
+  lg.setMeshCullMode("front")
+  self:drawCube()
+  lg.setMeshCullMode("back")
+  lg.pop()
+  lg.setCanvas()
+
+  lg.setCanvas(self.finalReflectionCanvas)
+  lg.clear(0, 0, 0, 0)
+  lg.setShader(self.reflectionShader)
+  lg.draw(self.reflectionCanvas, 0, 0, 0, self.reflectionResScale, self.reflectionResScale)
+  lg.setShader()
+  lg.setCanvas()
+
+  lg.setBlendMode("alpha", "premultiplied")
+  lg.draw(self.floorCanvas)
+  lg.setBlendMode("alpha", "alphamultiply")
+
+  lg.setBlendMode("alpha", "alphamultiply")
+  lg.setColor(1, 1, 1, 0.5)
+  lg.draw(self.finalReflectionCanvas)
+  lg.setBlendMode("alpha", "alphamultiply")
+  lg.setColor(1, 1, 1)
+
+  lg.push()
+
+  lg.replaceTransform(self.projectionMatrix) -- projection matrix
+  lg.applyTransform(self.camera.viewMatrix)  -- view matrix
+
+  self:drawCube()
 
   lg.pop()
 
