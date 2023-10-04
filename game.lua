@@ -89,6 +89,11 @@ local vertexFormat = {
   -- {"VertexNormal", "float", 3}
 }
 
+local ceilingVertexFormat = {
+  { "VertexPosition", "float", 3 },
+  { "VertexColor",    "float", 4 }
+}
+
 local colors = {
   colorFromHex "0045AD",
   colorFromHex "FF5900",
@@ -182,6 +187,20 @@ local floor = lg.newMesh(vertexFormat, {
   { -gridSize, 0, gridSize,  -gridSize + 0.5, -gridSize + 0.5, 1, 1, 1 },
 }, "fan")
 floor:setTexture(floorImage)
+
+local ceiling
+do
+  local verts = {
+    { 0, 0, 0, 1, 1, 1, 0.65 }
+  }
+  local radius = 14
+  local segments = 16
+  for i = 0, segments do
+    local a = i / segments * math.pi * 2
+    table.insert(verts, 2, { math.cos(a) * radius, 0, math.sin(a) * radius, 1, 1, 1, 0 })
+  end
+  ceiling = lg.newMesh(ceilingVertexFormat, verts, "fan")
+end
 
 local game = {}
 
@@ -445,7 +464,7 @@ function game:mousereleased(x, y, b)
       if math.abs(self.rotatingAngle) > math.pi / 4 or self.rotatingSpeed >= self.minFlickSpeed then
         -- perform the rotation
         local direction = round((self.rotatingAngle + sign(self.rotatingAngle) * math.min(math.floor(self.rotatingSpeed / self.minFlickSpeed), 1)) /
-        (math.pi / 2))
+          (math.pi / 2))
         self:doRotation(direction)
         self:updatePieceColors()
         self.visRotatingAngle = self.rotatingAngle - direction * math.pi / 2
@@ -491,6 +510,11 @@ function game:draw()
   lg.setShader(self.fogShader)
   lg.draw(floor)
   lg.setShader()
+
+  lg.push()
+  translate3D({ x = 0, y = 10, z = 0 })
+  lg.draw(ceiling)
+  lg.pop()
 
   lg.push()
   translate3D(self.rubikPosition)
